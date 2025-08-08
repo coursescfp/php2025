@@ -1,3 +1,11 @@
+<?php
+session_start();
+
+include_once('common/functions.php');
+
+
+?>
+
 <!DOCTYPE html>
 <html lang="fr">
 
@@ -9,11 +17,11 @@
     <!-- header -->
     <?php include_once('common/header.php') ?>
 
-    <main class="main">
-    
-    <section id="hero" class="hero section">
-        <h1>Bienvenue</h1>
-    </section>
+    <main class="main py-5">
+
+        <section class="container">
+            <?php router() ?>
+        </section>
 
     </main>
 
