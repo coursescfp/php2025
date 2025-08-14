@@ -1,28 +1,43 @@
 <?php
 
+/**
+ * Fonction permettant de retourner la ressource demandée via la variable $GET['page']
+ */
+
 function router()
 {
     return isset($_GET['page']) && match ($_GET['page']) {
+
         "register" => include('app/auth/register/form.php'),
         "register-treatment" => include('app/auth/register/treatment.php'),
         "login" => include('app/auth/login/form.php'),
         "login-treatment" => include('app/auth/login/treatment.php'),
         "forgot-password" => include('app/auth/forgot-password/form.php'),
 
+        "home" => include('app/main/home/index.php'),
+
+        "logout" => include('app/auth/logout.php'),
+
 
         default => include('app/auth/login/form.php')
     };
 }
 
+/**
+ * Fonction pour la connexion à la base de données
+ */
 function dbConnexion()
 {
     try {
-        return new PDO('mysql:host=localhost;dbname=portfolio;charset=utf8', 'root', '');
+        return new PDO('mysql:host=localhost;dbname=portfolio;charset=utf8', 'root', '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
     } catch (Exception $e) {
         die('Une erreur est survenue lors de la connexion à la base de données. Détails : ' . $e->getMessage());
     }
 }
 
+/**
+ * Fonction d'inscription utilisateur
+ */
 function register(array $data)
 {
     $registered = false;
@@ -42,12 +57,73 @@ function register(array $data)
     return $registered;
 }
 
+/**
+ * Fonction pour vérifier si une adresse email essayant de s'inscrire existe déjà en base de données dans la 
+ * table utilisateur
+ */
+function is_mail_exist(string $email)
+{
+    $existed = false;
+
+    $data = null;
+
+    $pdoInstance = dbConnexion();
+
+    $request = 'SELECT * FROM users where email=:email';
+
+    $preparation = $pdoInstance->prepare($request);
+
+    $execution = $preparation->execute([
+        'email' => $email
+    ]);
+
+    $data = $preparation->fetch();
+
+    if (is_array($data)) {
+        $existed = true;
+    }
+
+    return $existed;
+}
+
+/**
+ * Fonction pour ramener les anciennes données soumises en cas d'erreurs
+ */
 function oldinputs(array $inputs, string $key)
 {
     return !empty($inputs[$key]) ? $inputs[$key] : null;
 }
 
+/**
+ * Fonction pour afficher un message d'erreur spécifique à chaque champ en cas d'erreur
+ */
 function errors(array $errors, string $key)
 {
     return !empty($errors[$key]) ? "<div><span class='text-danger'>" . $errors[$key] . "</span></div>" : '';
+}
+
+/**
+ * Fonction de connexion
+ */
+function login(array $data)
+{
+    $logged = false;
+
+    $pdoInstance = dbConnexion();
+
+    $request = 'SELECT last_name, first_name, gender, email, avatar FROM users where email=:email and password=:password';
+
+    $preparation = $pdoInstance->prepare($request);
+
+    //die(var_dump($data));
+
+    $preparation->execute($data);
+
+    $_SESSION['user_connected'] = $preparation->fetch();
+
+    if (is_array($_SESSION['user_connected'])) {
+        $logged = true;
+    }
+
+    return $logged;
 }

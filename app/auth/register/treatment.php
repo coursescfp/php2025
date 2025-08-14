@@ -1,5 +1,4 @@
 <?php
-session_start();
 
 $_SESSION['global_error'] = "";
 
@@ -20,6 +19,10 @@ if (!in_array($_POST['gender'], ['M','F','A'])) {
 
 if (!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
     $_SESSION['errors']['email'] = 'Merci de renseigner une adresse email valide.';
+}
+
+if (is_mail_exist($_POST['email'])) {
+    $_SESSION['errors']['email'] = 'Cette adresse email est déjà associé à un compte utilisateur.';
 } 
 
 if (strlen($_POST['password']) < 8) {
@@ -39,6 +42,7 @@ if (empty($_SESSION['global_error']) and !empty($_SESSION['errors'])) {
 }
 
 if (!empty($_SESSION['global_error']) or !empty($_SESSION['errors'])) {
+    
     foreach($_POST as $key => $value) {
         $_POST[$key] = htmlspecialchars($_POST[$key]);
     }

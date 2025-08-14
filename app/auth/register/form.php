@@ -1,10 +1,13 @@
 <?php
 
+if (!empty($_SESSION['user_connected'])) {
+    header('location: /?page=home');
+    exit;
+}
+
 $data = $_SESSION['data'] ?? [];
 
 $errors = $_SESSION['errors'] ?? [];
-
-var_dump($data, $errors);
 
 ?>
 
@@ -48,7 +51,7 @@ var_dump($data, $errors);
                 <label for="" class="form-label">Email
                     <span class="text-danger">*</span>
                 </label>
-                <input type="email" name="email" id="" value="<?= !empty($data) ? oldinputs($data, 'last_name') : '' ?>" class="form-control" required>
+                <input type="email" name="email" id="" value="<?= !empty($data) ? oldinputs($data, 'email') : '' ?>" class="form-control" required>
                 
                 <?= errors($errors, 'email') ?>
             </div>
@@ -73,7 +76,7 @@ var_dump($data, $errors);
         </div>
 
         <div class="form-check">
-            <input class="form-check-input" type="checkbox" value="" id="approve" name="approve" <?= !empty($data['approve']) ? "checked" : '' ?>>
+            <input class="form-check-input" type="checkbox" id="approve" name="approve" <?= !empty($data['approve']) ? "checked" : '' ?>>
             <label class="form-check-label" for="approve">
                 J'accepte les termes et conditions
                 <span class="text-danger">*</span>
@@ -87,3 +90,7 @@ var_dump($data, $errors);
         </div>
     </form>
 </div>
+
+<?php
+unset($_SESSION['global_error'], $_SESSION['global_success'], $_SESSION['data'], $_SESSION['errors']);
+?>
