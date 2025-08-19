@@ -1,8 +1,7 @@
 <?php
 
 if (!empty($_SESSION['user_connected'])) {
-    header('location: /?page=home');
-    exit;
+    redirect_to('home');
 }
 
 $data = $_SESSION['data'] ?? [];

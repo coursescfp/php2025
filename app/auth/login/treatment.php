@@ -28,17 +28,16 @@ $_SESSION['data'] = $_POST;
 if (!empty($_SESSION['errors'])) {
     $_SESSION['global_error'] = "Des erreurs sont survenues.";
 
-    header('location: /?page=login');
-    exit;
+    redirect_to('login');
 } else {
 
     $_POST['password'] = sha1($_POST['password']);
 
     if (login($_POST)) {
         $_SESSION['global_success'] = 'Connexion effectuée avec succès.';
-        header('location: /?page=home');
+        redirect_to('home');
     } else {
         $_SESSION['global_error'] = "Adresse email ou mot de passe incorrect.";
-        header('location: /?page=login');
+        redirect_to('login');
     }
 }

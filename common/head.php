@@ -23,4 +23,18 @@
 
   <!-- Main CSS File -->
   <link href="public/css/main.css" rel="stylesheet">
+
+  <style>
+    html, body {
+      height: 100%;
+    }
+    ._main {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .content {
+      flex: 1;
+    }
+  </style>
 </head>

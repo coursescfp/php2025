@@ -4,5 +4,5 @@ if (!empty($_SESSION['user_connected'])) {
     session_destroy();
     $_SESSION['global_success'] = 'vous êtes déconnecté.';
 
-    header('location: /?page=login');
+    redirect_to('login');
 }

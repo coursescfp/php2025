@@ -1,5 +1,14 @@
 <?php
 
+function redirect_to($page)
+{
+    define("PROJECT_NAME", 'portfolio');
+
+    header('location: /' . PROJECT_NAME . '/?page=' . $page);
+    
+    exit;
+}
+
 /**
  * Fonction permettant de retourner la ressource demandée via la variable $GET['page']
  */
@@ -15,6 +24,8 @@ function router()
         "forgot-password" => include('app/auth/forgot-password/form.php'),
 
         "home" => include('app/main/home/index.php'),
+        "add-project" => include('app/main/projects/create/form.php'),
+        "add-project-treatment" => include('app/main/projects/create/treatment.php'),
 
         "logout" => include('app/auth/logout.php'),
 
@@ -111,7 +122,7 @@ function login(array $data)
 
     $pdoInstance = dbConnexion();
 
-    $request = 'SELECT last_name, first_name, gender, email, avatar FROM users where email=:email and password=:password';
+    $request = 'SELECT id, last_name, first_name, gender, email, avatar FROM users where email=:email and password=:password';
 
     $preparation = $pdoInstance->prepare($request);
 
@@ -126,4 +137,47 @@ function login(array $data)
     }
 
     return $logged;
+}
+
+/**
+ * Fonction d'enregistrement d'un projet
+ */
+function insert_project(array $data)
+{
+    $inserted = false;
+
+    $pdoInstance = dbConnexion();
+
+    $request = 'INSERT INTO projects (name, short_description, description, image, user_id) VALUES (:name, :short_description, :description, :image, :user_id)';
+
+    $preparation = $pdoInstance->prepare($request);
+
+    $execution = $preparation->execute($data);
+
+    if ($execution) {
+        $inserted = true;
+    }
+
+    return $inserted;
+}
+
+
+/**
+ * Fonction de récupération de projet
+ */
+function fetch_project(int $user_id)
+{
+    $data = [];
+
+    $pdoInstance = dbConnexion();
+
+    $request = 'SELECT * FROM projects where user_id=:user_id and deleted_at IS NULL';
+
+    $preparation = $pdoInstance->prepare($request);
+
+    $execution = $preparation->execute(['user_id' => $user_id]);
+
+    $data = $preparation->fetchAll(PDO::FETCH_ASSOC);
+
+    return $data;
 }

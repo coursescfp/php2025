@@ -16,9 +16,9 @@ include_once('common/functions.php');
     <!-- header -->
     <?php include_once('common/header.php') ?>
 
-    <main class="main py-5">
+    <main class="main py-5 _main">
 
-        <section class="container">
+        <section class="container content">
 
             <?php
             if (!empty($_SESSION['global_error'])) {

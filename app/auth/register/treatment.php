@@ -49,8 +49,7 @@ if (!empty($_SESSION['global_error']) or !empty($_SESSION['errors'])) {
 
     $_SESSION['data'] = $_POST;
 
-    header('location: /?page=register');
-    exit;
+    redirect_to('register');
 }
 
 $_POST['password'] = sha1($_POST['password']);
@@ -59,5 +58,5 @@ unset($_POST['confirm_password'], $_POST['approve']);
 
 if (register($_POST)) {
     $_SESSION['global_success'] = 'Inscription effectuée avec succès. Vous pouvez vous connecter';
-    header('location: /?page=login');
+    redirect_to('login');
 }
