@@ -4,19 +4,25 @@ $data = $_SESSION['data'] ?? [];
 
 $errors = $_SESSION['errors'] ?? [];
 
+if ($_GET['page'] == 'edit-project' && !check_user_project(['user_id' => $_SESSION['user_connected']['id'], 'project_id' => !empty($_GET['id']) ? $_GET['id'] : null])) {
+    $_SESSION['global_error'] = 'Projet inconnu';
+    redirect_to('home');
+}
+
+$project = fetch_projects(['user_id' => $_SESSION['user_connected']['id'], 'project_id' => !empty($_GET['id']) ? $_GET['id'] : null]) ?? [];
+
 ?>
 
-
 <div>
-    <h3 class="text-primary text-center mb-5">Nouveau projet</h3>
+    <h3 class="text-primary text-center mb-5"><?= !empty($project) ? 'Modifier projet "' . $project[0]['name'] . '"' : 'Nouveau projet' ?></h3>
 
-    <form action="?page=add-project-treatment" method="post" enctype="multipart/form-data">
+    <form action="<?= !empty($project) ? '?page=edit-project-treatment&id='.$_GET['id'] : '?page=add-project-treatment' ?>" method="post" enctype="multipart/form-data">
         <div class="row mb-3">
             <div class="col">
                 <label for="" class="form-label">Nom
                     <span class="text-danger">*</span>
                 </label>
-                <input type="text" name="name" id="" value="<?= !empty($data) ? oldinputs($data, 'name') : '' ?>" class="form-control" required>
+                <input type="text" name="name" id="" value="<?= empty($project[0]['name']) ? oldinputs($data, 'name') : $project[0]['name'] ?>" class="form-control" required>
 
                 <?= errors($errors, 'name') ?>
             </div>
@@ -24,7 +30,7 @@ $errors = $_SESSION['errors'] ?? [];
                 <label for="" class="form-label">Courte description
                     <span class="text-danger">*</span>
                 </label>
-                <input type="text" name="short_description" id="" value="<?= !empty($data) ? oldinputs($data, 'short_description') : '' ?>" class="form-control" required>
+                <input type="text" name="short_description" id="" value="<?= empty($project[0]['short_description']) ? oldinputs($data, 'short_description') : $project[0]['short_description'] ?>" class="form-control" required>
 
                 <?= errors($errors, 'short_description') ?>
             </div>
@@ -35,7 +41,7 @@ $errors = $_SESSION['errors'] ?? [];
             </label>
             <div class="col">
                 <textarea class="form-control" name="description" id="" cols="20" rows="5">
-                    <?= !empty($data) ? oldinputs($data, 'description') : '' ?>
+                    <?= empty($project[0]['description']) ? oldinputs($data, 'description') : $project[0]['description'] ?>
                 </textarea>
                 <?= errors($errors, 'description') ?>
             </div>
@@ -51,8 +57,18 @@ $errors = $_SESSION['errors'] ?? [];
             </div>
         </div>
 
+        <?php
+        if (!empty($project)) {
+        ?>
+            <div class="d-flex justify-content-center">
+                <img src="public/img/uploads/<?= $project[0]['image'] ?>" class="w-25">
+            </div>
+        <?php
+        }
+        ?>
+
         <div class="mt-5 d-flex justify-content-center">
-            <button type="submit" class="btn w-50 btn-primary">Ajouter</button>
+            <button type="submit" class="btn w-50 btn-primary"><?= !empty($project) ? 'Modifier' : 'Ajouter' ?></button>
         </div>
     </form>
 </div>

@@ -8,8 +8,6 @@ $_SESSION['errors'] = [];
 
 $_SESSION['data'] = [];
 
-//die(var_dump($_SESSION['user_connected']));
-
 if (
     empty($_POST['name']) or empty($_POST['short_description']) or empty($_POST['description'])
     or !isset($_FILES['image'])
@@ -36,7 +34,7 @@ if (empty($_SESSION['global_error']) and !empty($_SESSION['errors'])) {
 }
 
 if (!empty($_SESSION['global_error']) or !empty($_SESSION['errors'])) {
-    returnData($_POST);
+    return_back($_POST);
 }
 
 $user = $_SESSION['user_connected']['last_name'] . '_' . $_SESSION['user_connected']['first_name'] . '_' . $_SESSION['user_connected']['id'];
@@ -64,12 +62,12 @@ if (move_uploaded_file($_FILES['image']['tmp_name'], $path . $newName . '.' . $f
     }
 } else {
     $_SESSION['global_error'] = 'Une erreur s\'est produite lors de l\'ajout du projet';
-    returnData($_POST);
+    return_back($_POST);
 }
 
 
 
-function returnData($data) {
+function return_back($data) {
     foreach ($data as $key => $value) {
         $data[$key] = htmlspecialchars($value);
     }

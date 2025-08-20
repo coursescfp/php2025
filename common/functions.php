@@ -1,12 +1,36 @@
 <?php
 
+/**
+ * Fonction de redirection
+ */
 function redirect_to($page)
 {
-    define("PROJECT_NAME", 'portfolio');
-
-    header('location: /' . PROJECT_NAME . '/?page=' . $page);
-    
+    header('location: /?page=' . $page);
     exit;
+}
+
+/**
+ * Fonction pour retourner le moment actuel (date et heure au format souhaité ou 'AAAA-MM-JJ H:m:s' par défaut)
+ */
+function now(string|null $format=null)
+{
+    return date($format ?? 'Y-m-d H:i:s');
+}
+
+/**
+ * Fonction pour ramener les anciennes données soumises en cas d'erreurs
+ */
+function oldinputs(array $inputs, string $key)
+{
+    return !empty($inputs) && !empty($inputs[$key]) ? $inputs[$key] : null;
+}
+
+/**
+ * Fonction pour afficher un message d'erreur spécifique à chaque champ en cas d'erreur
+ */
+function errors(array $errors, string $key)
+{
+    return !empty($errors[$key]) ? "<div><span class='text-danger'>" . $errors[$key] . "</span></div>" : '';
 }
 
 /**
@@ -15,29 +39,33 @@ function redirect_to($page)
 
 function router()
 {
-    return isset($_GET['page']) && match ($_GET['page']) {
+    return isset($_GET['page']) ? 
+    match ($_GET['page']) {
+        "register" => require('app/auth/register/form.php'),
+        "register-treatment" => require('app/auth/register/treatment.php'),
+        "login" => require('app/auth/login/form.php'),
+        "login-treatment" => require('app/auth/login/treatment.php'),
+        "forgot-password" => require('app/auth/forgot-password/form.php'),
 
-        "register" => include('app/auth/register/form.php'),
-        "register-treatment" => include('app/auth/register/treatment.php'),
-        "login" => include('app/auth/login/form.php'),
-        "login-treatment" => include('app/auth/login/treatment.php'),
-        "forgot-password" => include('app/auth/forgot-password/form.php'),
+        "home" => require('app/main/home/index.php'),
+        "add-project" => require('app/main/projects/form.php'),
+        "add-project-treatment" => require('app/main/projects/create/treatment.php'),
+        "edit-project" => require('app/main/projects/form.php'),
+        "edit-project-treatment" => require('app/main/projects/edit/treatment.php'),
+        "delete-project" => require('app/main/projects/delete.php'),
 
-        "home" => include('app/main/home/index.php'),
-        "add-project" => include('app/main/projects/create/form.php'),
-        "add-project-treatment" => include('app/main/projects/create/treatment.php'),
-
-        "logout" => include('app/auth/logout.php'),
+        "logout" => require('app/auth/logout.php'),
 
 
-        default => include('app/auth/login/form.php')
-    };
+        default => require('app/auth/login/form.php')
+    } : 
+    require('app/auth/login/form.php');
 }
 
 /**
  * Fonction pour la connexion à la base de données
  */
-function dbConnexion()
+function dbConnection()
 {
     try {
         return new PDO('mysql:host=localhost;dbname=portfolio;charset=utf8', 'root', '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
@@ -53,7 +81,7 @@ function register(array $data)
 {
     $registered = false;
 
-    $pdoInstance = dbConnexion();
+    $pdoInstance = dbConnection();
 
     $request = 'INSERT INTO users (last_name, first_name, gender, email, password) VALUES (:last_name, :first_name, :gender, :email, :password)';
 
@@ -76,41 +104,23 @@ function is_mail_exist(string $email)
 {
     $existed = false;
 
-    $data = null;
+    $data = [];
 
-    $pdoInstance = dbConnexion();
+    $pdoInstance = dbConnection();
 
     $request = 'SELECT * FROM users where email=:email';
 
     $preparation = $pdoInstance->prepare($request);
 
-    $execution = $preparation->execute([
-        'email' => $email
-    ]);
+    $preparation->execute(['email' => $email]);
 
     $data = $preparation->fetch();
 
-    if (is_array($data)) {
+    if (!empty($data)) {
         $existed = true;
     }
 
     return $existed;
-}
-
-/**
- * Fonction pour ramener les anciennes données soumises en cas d'erreurs
- */
-function oldinputs(array $inputs, string $key)
-{
-    return !empty($inputs[$key]) ? $inputs[$key] : null;
-}
-
-/**
- * Fonction pour afficher un message d'erreur spécifique à chaque champ en cas d'erreur
- */
-function errors(array $errors, string $key)
-{
-    return !empty($errors[$key]) ? "<div><span class='text-danger'>" . $errors[$key] . "</span></div>" : '';
 }
 
 /**
@@ -120,13 +130,11 @@ function login(array $data)
 {
     $logged = false;
 
-    $pdoInstance = dbConnexion();
+    $pdoInstance = dbConnection();
 
     $request = 'SELECT id, last_name, first_name, gender, email, avatar FROM users where email=:email and password=:password';
 
     $preparation = $pdoInstance->prepare($request);
-
-    //die(var_dump($data));
 
     $preparation->execute($data);
 
@@ -146,7 +154,7 @@ function insert_project(array $data)
 {
     $inserted = false;
 
-    $pdoInstance = dbConnexion();
+    $pdoInstance = dbConnection();
 
     $request = 'INSERT INTO projects (name, short_description, description, image, user_id) VALUES (:name, :short_description, :description, :image, :user_id)';
 
@@ -161,23 +169,98 @@ function insert_project(array $data)
     return $inserted;
 }
 
-
 /**
  * Fonction de récupération de projet
  */
-function fetch_project(int $user_id)
+function fetch_projects(array $fetchRequestData)
 {
     $data = [];
 
-    $pdoInstance = dbConnexion();
+    $pdoInstance = dbConnection();
 
-    $request = 'SELECT * FROM projects where user_id=:user_id and deleted_at IS NULL';
+    $request = 'SELECT * FROM projects WHERE user_id=:user_id';
+
+    if (!empty($fetchRequestData['project_id'])) {
+        $request .= ' AND id=:project_id';
+    }
+
+    $request .= ' AND deleted_at IS NULL ORDER BY id DESC';
 
     $preparation = $pdoInstance->prepare($request);
 
-    $execution = $preparation->execute(['user_id' => $user_id]);
+    $preparation->execute($fetchRequestData);
 
     $data = $preparation->fetchAll(PDO::FETCH_ASSOC);
 
     return $data;
+}
+
+/**
+ * Fonction de mise à jour d'un projet
+ */
+function update_project(array $data)
+{
+    $updated = false;
+
+    $pdoInstance = dbConnection();
+
+    $request = 'UPDATE projects SET name=:name, short_description=:short_description, description=:description, image=:image, updated_at=:updated_at WHERE id=:project_id';
+
+    $preparation = $pdoInstance->prepare($request);
+
+    $execution = $preparation->execute($data);
+
+    if ($execution) {
+        $updated = true;
+    }
+
+    return $updated;
+}
+
+/**
+ * Fonction de suppression d'un projet
+ */
+function delete_project(array $data)
+{
+    $deleted = false;
+
+    $pdoInstance = dbConnection();
+
+    $request = 'UPDATE projects SET deleted_at=:deleted_at WHERE id=:project_id';
+
+    $preparation = $pdoInstance->prepare($request);
+
+    $execution = $preparation->execute($data);
+
+    if ($execution) {
+        $deleted = true;
+    }
+
+    return $deleted;
+}
+
+/**
+ * Fonction pour vérifier l'existence d'un projet pour un utilisateur
+ */
+function check_user_project(array $checkingRequestData)
+{
+    $existed = false;
+
+    $data = [];
+
+    $pdoInstance = dbConnection();
+
+    $request = 'SELECT * FROM projects where id=:project_id AND user_id=:user_id';
+
+    $preparation = $pdoInstance->prepare($request);
+
+    $preparation->execute($checkingRequestData);
+
+    $data = $preparation->fetch();
+
+    if (!empty($data)) {
+        $existed = true;
+    }
+
+    return $existed;
 }
