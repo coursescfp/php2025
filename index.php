@@ -1,5 +1,13 @@
 <?php
+
 session_start();
+
+require __DIR__ . '/vendor/autoload.php';
+
+use Dotenv\Dotenv;
+
+$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv->load();
 
 include_once('common/functions.php');
 
@@ -24,7 +32,9 @@ include_once('common/functions.php');
             if (!empty($_SESSION['global_error'])) {
             ?>
 
-                <p class="alert alert-danger"><?= $_SESSION['global_error'] ?></p>
+                <div class="alert alert-danger alert-dismissible fade show w-50 mx-auto"><?= $_SESSION['global_error'] ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
 
             <?php
             }
@@ -34,7 +44,9 @@ include_once('common/functions.php');
             if (!empty($_SESSION['global_success'])) {
             ?>
 
-                <p class="alert alert-success"><?= $_SESSION['global_success'] ?></p>
+                <div class="alert alert-success alert-dismissible fade show w-50 mx-auto"><?= $_SESSION['global_success'] ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
 
             <?php
             }

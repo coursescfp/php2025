@@ -8,6 +8,8 @@ $_SESSION['errors'] = [];
 
 $_SESSION['data'] = [];
 
+$_POST = sanitize($_POST);
+
 if (empty($_POST['email'])) {
     $_SESSION['errors']['email'] = 'Le champs adresse email est requis';
 }
@@ -16,14 +18,7 @@ if (empty($_POST['password'])) {
     $_SESSION['errors']['password'] = 'Le champs mot de passe est requis';
 }
 
-
-
-foreach ($_POST as $key => $value) {
-    $_POST[$key] = htmlspecialchars($_POST[$key]);
-}
-
 $_SESSION['data'] = $_POST;
-
 
 if (!empty($_SESSION['errors'])) {
     $_SESSION['global_error'] = "Des erreurs sont survenues.";

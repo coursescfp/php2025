@@ -8,6 +8,8 @@ $_SESSION['errors'] = [];
 
 $_SESSION['data'] = [];
 
+$_POST = sanitize($_POST);
+
 if (
     empty($_POST['name']) or empty($_POST['short_description']) or empty($_POST['description'])
     or !isset($_FILES['image'])
@@ -49,8 +51,6 @@ $newName = substr(str_shuffle(md5($fileInfo['filename'])), 0, 7);
 
 $imagePath =  $user . '/' . $_POST['name'] . '/' . $newName . '.' . $fileInfo['extension'];
 
-//die(var_dump($path));
-
 if (move_uploaded_file($_FILES['image']['tmp_name'], $path . $newName . '.' . $fileInfo['extension'])) {
 
     $_POST['image'] = $imagePath;
@@ -59,19 +59,19 @@ if (move_uploaded_file($_FILES['image']['tmp_name'], $path . $newName . '.' . $f
     if (insert_project($_POST)) {
         $_SESSION['global_success'] = 'Projet enregistré avec succès';
         redirect_to('home');
+    } else {
+        $_SESSION['global_error'] = 'Une erreur s\'est produite lors de l\'ajout du projet';
+        return_back($_POST);
     }
 } else {
-    $_SESSION['global_error'] = 'Une erreur s\'est produite lors de l\'ajout du projet';
+    $_SESSION['global_error'] = 'Une erreur s\'est produite lors du processus.';
     return_back($_POST);
 }
 
 
 
-function return_back($data) {
-    foreach ($data as $key => $value) {
-        $data[$key] = htmlspecialchars($value);
-    }
-
+function return_back($data)
+{
     $_SESSION['data'] = $data;
 
     redirect_to('add-project');

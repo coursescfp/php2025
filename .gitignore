@@ -1,3 +1,4 @@
 composer.lock.json
 vendor/
 public/img/uploads
+.env

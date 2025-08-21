@@ -4,7 +4,14 @@ if (empty($_SESSION['user_connected'])) {
     redirect_to('login');
 }
 
-$projects = fetch_projects(['user_id' => $_SESSION['user_connected']['id']]) ?? [];
+$count_projects = count_projects($_SESSION['user_connected']['id']);
+$per_page = 10;
+$page = !empty($_GET['page_number']) ? $_GET['page_number'] : 1;
+
+/**
+ * Récupérer les projets de l'utilisateur connecté.
+ */
+$projects = fetch_projects(['user_id' => $_SESSION['user_connected']['id'], 'per_page' => $per_page, 'page' => $page]) ?? [];
 
 ?>
 
@@ -19,8 +26,8 @@ $projects = fetch_projects(['user_id' => $_SESSION['user_connected']['id']]) ?? 
         foreach ($projects as $project) {
     ?>
             <div class="col-md-3 g-3">
-                <div class="card h-100" data-bs-toggle="modal" data-bs-target="#project_detail<?= $project["id"] ?>" style="width: 18rem;">
-                    <img src="public/img/uploads/<?= $project['image'] ?>" class="card-img-top h-100" alt="...">
+                <div class="card h-100" style="width: 18rem;">
+                    <img src="public/img/uploads/<?= $project['image'] ?>" data-bs-toggle="modal" data-bs-target="#project_detail<?= $project["id"] ?>" class="card-img-top h-100" alt="...">
                     <div class="card-body">
                         <h5 class="card-title"><?= $project['name'] ?></h5>
                         <p class="card-text"><?= $project['short_description'] ?></p>
@@ -77,32 +84,34 @@ $projects = fetch_projects(['user_id' => $_SESSION['user_connected']['id']]) ?? 
                     </div>
                 </div>
             </div>
-
-            <div class="d-flex justify-content-center p-5">
-                <nav aria-label="Page navigation example">
-                    <ul class="pagination">
-                        <li class="page-item">
-                            <a class="page-link" href="#" aria-label="Previous">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                        <li class="page-item"><a class="page-link" href="#">1</a></li>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <li class="page-item"><a class="page-link" href="#">3</a></li>
-                        <li class="page-item">
-                            <a class="page-link" href="#" aria-label="Next">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
     <?php
         }
     }
     ?>
+
+    <!-- Pagination -->
+    <div class="d-flex justify-content-center p-5">
+        <nav aria-label="Page navigation example">
+            <ul class="pagination">
+                <li class="page-item">
+                    <a class="page-link <?= $page == 1 ? 'disabled' : '' ?>" href="?page=home&page_number=<?= !empty($page) && $page > 1 ? $page - 1 : 1 ?>" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                <li class="page-item"><a class="page-link" href="#"><?= $page ?></a></li>
+                <li class="page-item">
+                    <a class="page-link <?= $count_projects - ($page * $per_page) <= 0 ? 'disabled' : '' ?>" href="?page=home&page_number=<?= $page + 1 ?>" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
 </div>
 
+<!--
+Vider les valeurs de sessions suivantes lors du rechargement de la page
+-->
 <?php
 unset($_SESSION['global_error'], $_SESSION['global_success']);
 ?>

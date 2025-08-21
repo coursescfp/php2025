@@ -8,6 +8,8 @@ $_SESSION['errors'] = [];
 
 $_SESSION['data'] = [];
 
+$_POST = sanitize($_POST);
+
 if (empty($_POST['last_name']) or empty($_POST['first_name']) or empty($_POST['gender']) or empty($_POST['email']) or 
 empty($_POST['password']) or empty($_POST['confirm_password'])) {
     $_SESSION['global_error'] = "Tous les champs sont requis";
@@ -43,10 +45,6 @@ if (empty($_SESSION['global_error']) and !empty($_SESSION['errors'])) {
 
 if (!empty($_SESSION['global_error']) or !empty($_SESSION['errors'])) {
     
-    foreach($_POST as $key => $value) {
-        $_POST[$key] = htmlspecialchars($_POST[$key]);
-    }
-
     $_SESSION['data'] = $_POST;
 
     redirect_to('register');

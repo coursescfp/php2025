@@ -1,20 +1,68 @@
 <?php
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+function mailSendin(string $destination, string $recipient, string $subject, string $body): bool
+{
+    $mail = new PHPMailer(true);
+    $mail->CharSet = "UTF-8";
+
+    try {
+        $mail->SMTPDebug = 0;
+        $mail->isSMTP();
+        $mail->Host = 'smtp.gmail.com';
+        $mail->SMTPAuth = true;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = 587;
+
+        $mail->Username = $_ENV['MAIL_FROM_ADDRESS'];
+        $mail->Password = $_ENV['MAIL_PASSWORD'];
+
+        $mail->setFrom($mail->Username, htmlspecialchars_decode($_ENV['MAIL_FROM_NAME']));
+        $mail->addAddress($destination, $recipient);
+        $mail->addReplyTo($mail->Username, htmlspecialchars_decode($_ENV['MAIL_FROM_NAME']));
+
+        $mail->IsHTML(true);
+        $mail->Subject = htmlspecialchars_decode($subject);
+        $mail->Body = $body;
+
+        return $mail->send();
+    } catch (Exception $e) {
+
+        return false;
+    }
+}
+
 /**
  * Fonction de redirection
  */
-function redirect_to($page)
+function redirect_to($page, $id = null)
 {
-    header('location: /?page=' . $page);
+    $base = str_contains($_SERVER['REQUEST_URI'], 'portfolio') ? '/portfolio' : '';
+
+    is_null($id) ? header('location: ' . $base . '/?page=' . $page) : header('location: ' . $base . '/?page=' . $page . '&id=' . $id);
     exit;
 }
 
 /**
  * Fonction pour retourner le moment actuel (date et heure au format souhaité ou 'AAAA-MM-JJ H:m:s' par défaut)
  */
-function now(string|null $format=null)
+function now(string|null $format = null)
 {
     return date($format ?? 'Y-m-d H:i:s');
+}
+
+/**
+ * Fonction pour assainir les entrées utilisateur
+ */
+function sanitize(array $inputs)
+{
+    foreach ($inputs as $key => $value) {
+        $inputs[$key] = htmlspecialchars(trim($value));
+    }
+
+    return $inputs;
 }
 
 /**
@@ -39,27 +87,28 @@ function errors(array $errors, string $key)
 
 function router()
 {
-    return isset($_GET['page']) ? 
-    match ($_GET['page']) {
-        "register" => require('app/auth/register/form.php'),
-        "register-treatment" => require('app/auth/register/treatment.php'),
-        "login" => require('app/auth/login/form.php'),
-        "login-treatment" => require('app/auth/login/treatment.php'),
-        "forgot-password" => require('app/auth/forgot-password/form.php'),
+    return isset($_GET['page']) ?
+        match ($_GET['page']) {
+            "register" => require('app/auth/register/form.php'),
+            "register-treatment" => require('app/auth/register/treatment.php'),
+            "login" => require('app/auth/login/form.php'),
+            "login-treatment" => require('app/auth/login/treatment.php'),
+            "forgot-password" => require('app/auth/forgot-password/form.php'),
+            "forgot-password-treatment" => require('app/auth/forgot-password/treatment.php'),
 
-        "home" => require('app/main/home/index.php'),
-        "add-project" => require('app/main/projects/form.php'),
-        "add-project-treatment" => require('app/main/projects/create/treatment.php'),
-        "edit-project" => require('app/main/projects/form.php'),
-        "edit-project-treatment" => require('app/main/projects/edit/treatment.php'),
-        "delete-project" => require('app/main/projects/delete.php'),
+            "home" => require('app/main/home/index.php'),
+            "add-project" => require('app/main/projects/form.php'),
+            "add-project-treatment" => require('app/main/projects/create/treatment.php'),
+            "edit-project" => require('app/main/projects/form.php'),
+            "edit-project-treatment" => require('app/main/projects/edit/treatment.php'),
+            "delete-project" => require('app/main/projects/delete.php'),
 
-        "logout" => require('app/auth/logout.php'),
+            "logout" => require('app/auth/logout.php'),
 
 
-        default => require('app/auth/login/form.php')
-    } : 
-    require('app/auth/login/form.php');
+            default => require('app/auth/login/form.php')
+        } :
+        require('app/auth/login/form.php');
 }
 
 /**
@@ -67,8 +116,13 @@ function router()
  */
 function dbConnection()
 {
+    $db_host = $_ENV['DB_HOST'];
+    $db_name = $_ENV['DB_NAME'];
+    $db_user = $_ENV['DB_USER'];
+    $db_password = $_ENV['DB_PASSWORD'];
+
     try {
-        return new PDO('mysql:host=localhost;dbname=portfolio;charset=utf8', 'root', '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        return new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8", $db_user, $db_password, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
     } catch (Exception $e) {
         die('Une erreur est survenue lors de la connexion à la base de données. Détails : ' . $e->getMessage());
     }
@@ -170,27 +224,58 @@ function insert_project(array $data)
 }
 
 /**
- * Fonction de récupération de projet
+ * Fonction de récupération du nombre total de projets pour un utilisateur
+ */
+function count_projects(int $user_id)
+{
+    $pdoInstance = dbConnection();
+
+    $request = 'SELECT COUNT(*) FROM projects WHERE user_id=:user_id AND deleted_at IS NULL';
+
+    $preparation = $pdoInstance->prepare($request);
+
+    $preparation->execute(['user_id' => $user_id]);
+
+    return $preparation->fetch()[0];
+}
+
+/**
+ * Fonction de récupération de projet, pagination incluse
  */
 function fetch_projects(array $fetchRequestData)
 {
+    $per_page = 2;
+    $page = 1;
+
+    if (array_key_exists('per_page', $fetchRequestData)) {
+        $per_page = $fetchRequestData['per_page'];
+        unset($fetchRequestData['per_page']);
+    }
+
+    if (array_key_exists('page', $fetchRequestData)) {
+        $page = $fetchRequestData['page'];
+        unset($fetchRequestData['page']);
+    }
+
+    $offset = ($page - 1) * $per_page;
+
     $data = [];
 
     $pdoInstance = dbConnection();
 
     $request = 'SELECT * FROM projects WHERE user_id=:user_id';
 
-    if (!empty($fetchRequestData['project_id'])) {
+    if (array_key_exists('project_id', $fetchRequestData)) {
         $request .= ' AND id=:project_id';
     }
 
-    $request .= ' AND deleted_at IS NULL ORDER BY id DESC';
+    $request .= " AND deleted_at IS NULL ORDER BY created_at DESC LIMIT $per_page OFFSET $offset";
 
     $preparation = $pdoInstance->prepare($request);
 
     $preparation->execute($fetchRequestData);
 
-    $data = $preparation->fetchAll(PDO::FETCH_ASSOC);
+    $data = array_key_exists('project_id', $fetchRequestData) ? $preparation->fetch() : $preparation->fetchAll(PDO::FETCH_ASSOC);
 
     return $data;
 }
@@ -240,27 +325,25 @@ function delete_project(array $data)
 }
 
 /**
- * Fonction pour vérifier l'existence d'un projet pour un utilisateur
+ * Fonction de suppression d'un dossier
  */
-function check_user_project(array $checkingRequestData)
+function delete_dir($dir)
 {
-    $existed = false;
-
-    $data = [];
-
-    $pdoInstance = dbConnection();
-
-    $request = 'SELECT * FROM projects where id=:project_id AND user_id=:user_id';
-
-    $preparation = $pdoInstance->prepare($request);
-
-    $preparation->execute($checkingRequestData);
-
-    $data = $preparation->fetch();
-
-    if (!empty($data)) {
-        $existed = true;
+    if (!is_dir($dir)) {
+        return false;
     }
 
-    return $existed;
+    $files = scandir($dir); // retourne les fichiers et/ou sous-dossiers contenu dans le dossier $dir
+    foreach ($files as $file) {
+        if ($file !== '.' && $file !== '..') {
+            $path = $dir . '/' . $file;
+            if (is_dir($path)) {
+                delete_dir($path);
+            } else {
+                unlink($path);
+            }
+        }
+    }
+
+    return rmdir($dir);
 }
