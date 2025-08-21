@@ -4,12 +4,12 @@ if (empty($_SESSION['user_connected'])) {
     redirect_to('login');
 }
 
-$count_projects = count_projects($_SESSION['user_connected']['id']);
-$per_page = 10;
-$page = !empty($_GET['page_number']) ? $_GET['page_number'] : 1;
+$count_projects = count_projects($_SESSION['user_connected']['id']); // nombre de projets en tout pour l'utilisateur connecté
+$per_page = 10; // nombre de projets à afficher par page
+$page = !empty($_GET['page_number']) ? $_GET['page_number'] : 1; // page actuelle
 
 /**
- * Récupérer les projets de l'utilisateur connecté.
+ * Récupérer les projets de l'utilisateur connecté avec pagination.
  */
 $projects = fetch_projects(['user_id' => $_SESSION['user_connected']['id'], 'per_page' => $per_page, 'page' => $page]) ?? [];
 
@@ -98,7 +98,7 @@ $projects = fetch_projects(['user_id' => $_SESSION['user_connected']['id'], 'per
                         <span aria-hidden="true">&laquo;</span>
                     </a>
                 </li>
-                <li class="page-item"><a class="page-link" href="#"><?= $page ?></a></li>
+                <li class="page-item"><a class="page-link active" href="#"><?= $page ?></a></li>
                 <li class="page-item">
                     <a class="page-link <?= $count_projects - ($page * $per_page) <= 0 ? 'disabled' : '' ?>" href="?page=home&page_number=<?= $page + 1 ?>" aria-label="Next">
                         <span aria-hidden="true">&raquo;</span>
