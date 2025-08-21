@@ -23,7 +23,6 @@ if (delete_dir($dirToRemove) && delete_project($data)) {
     $_SESSION['global_success'] = "Projet {$project['name']} supprimé avec succès";
 } else {
     $_SESSION['global_error'] = 'Une erreur s\'est produite lors de la suppression du projet ' . $project['name'];
-    return_back($data);
 }
 
 redirect_to('home');

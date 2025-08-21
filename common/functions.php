@@ -29,7 +29,6 @@ function mailSendin(string $destination, string $recipient, string $subject, str
 
         return $mail->send();
     } catch (Exception $e) {
-
         return false;
     }
 }
